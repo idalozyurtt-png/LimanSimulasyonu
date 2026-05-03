@@ -1,59 +1,60 @@
-package dataStructures;
 
-public class MyQueue {
-    private Node front;
-    private Node rear;
+package datastructures;
+
+
+
+public class MyQueue<T> {
+    private Node<T> front;
+    private Node<T> rear;
     private int size;
 
-    public Queue() {
+    public MyQueue() {
         front = null;
         rear = null;
         size = 0;
     }
 
-    public void enqueue(Arac arac) {
-        Node newNode = new Node(arac);
-
-        if (rear == null) {  
+    public void enqueue(T data) {
+        Node<T> newNode = new Node<>(data);
+        if (isEmpty()) {
             front = rear = newNode;
         } else {
             rear.next = newNode;
             rear = newNode;
         }
-
         size++;
     }
 
-    public Arac dequeue() {
-        if (isEmpty()) {
+    public T dequeue() {
+        if (isEmpty()){ 
             return null;
         }
-
-        Arac temp = front.data;
+        T data = front.data;
         front = front.next;
-
-        if (front == null) {
+        if (front == null){
             rear = null;
         }
-
         size--;
-        return temp;
+        return data;
     }
 
-    
-    public Arac peek() {
+    public T peek() {
         if (isEmpty()) {
-            return null;
-        }
-        return front.data;
+           return null;
+         }
+      return front.data;
     }
 
     public boolean isEmpty() {
         return front == null;
     }
 
-    public int getSize() {
+    public int size() {
         return size;
     }
-}
 
+    public void clear() {
+        front = rear = null;
+        size = 0;
+    }
+}
