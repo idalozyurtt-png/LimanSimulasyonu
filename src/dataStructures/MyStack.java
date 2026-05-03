@@ -1,81 +1,70 @@
-package dataStructures;
+
+package datastructures;
+
+/**
+ *
+ * @author idalozyurt
+ */
 
 public class MyStack<T> {
-
     private Node<T> top;
     private int size;
     private int capacity;
+   
 
     public MyStack(int capacity) {
-        this.capacity = capacity;
-        this.size = 0;
         this.top = null;
+        this.size = 0;
+        this.capacity = capacity;
     }
 
-  
-    public boolean push(T data) {
-
+    public void push(T data) {
+        
         if (isFull()) {
-            return false;
-        }
-
+            System.out.println("Stack dolu! Eklenemiyor: " + data);
+            return;
+        } 
         Node<T> newNode = new Node<>(data);
-
         newNode.next = top;
         top = newNode;
-
         size++;
-        return true;
     }
 
-    
     public T pop() {
-
-        if (isEmpty()) {
-            return null;
-        }
-
-        T temp = top.data;
+        if (isEmpty()) return null;
+        T data = top.data;
         top = top.next;
-
         size--;
-
-        return temp;
+        return data;
     }
 
-    
     public T peek() {
-
-        if (isEmpty()) {
-            return null;
-        }
-
-        return top.data;
+        return isEmpty() ? null : top.data;
     }
-
-    public boolean isEmpty() {
-        return size == 0;
-    }
-
-    public boolean isFull() {
+    
+     public boolean isFull() {
         return size == capacity;
+    }
+    
+    public boolean isEmpty() {
+        return top == null;
     }
 
     public int size() {
         return size;
     }
-
+    
     public int getCapacity() {
         return capacity;
     }
-}
-    public int getSize() {
-        return size;
+    
+    public void setCapacity(int capacity) {
+        this.capacity = capacity;
     }
 
-    public int getCapacity() {
-        return capacity;
+
+    public void clear() {
+        top = null;
+        size = 0;
     }
 }
-
-
