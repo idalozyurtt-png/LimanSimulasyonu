@@ -1,67 +1,66 @@
-package dataStructures;
 
-public class MyStack {
- 
+package datastructures;
 
-    private Node top;
+
+public class MyStack<T> {
+    private Node<T> top;
     private int size;
     private int capacity;
+   
 
-    public Stack(int capacity) {
-        this.capacity = capacity;
-        this.size = 0;
+    public MyStack(int capacity) {
         this.top = null;
+        this.size = 0;
+        this.capacity = capacity;
     }
 
-    public boolean push(Arac arac) {
-
+    public void push(T data) {
+        
         if (isFull()) {
-            return false; 
-        }
-
-        Node newNode = new Node(arac);
+            System.out.println("Stack dolu! Eklenemiyor: " + data);
+            return;
+        } 
+        Node<T> newNode = new Node<>(data);
         newNode.next = top;
         top = newNode;
-
         size++;
-        return true;
     }
 
-    public Arac pop() {
-
-        if (isEmpty()) {
-            return null;
-        }
-
-        Arac temp = top.data;
+    public T pop() {
+        if (isEmpty()) return null;
+        T data = top.data;
         top = top.next;
-
         size--;
-        return temp;
+        return data;
     }
 
-    public Arac peek() {
-        if (isEmpty()) {
-            return null;
-        }
-        return top.data;
+    public T peek() {
+        return isEmpty() ? null : top.data;
     }
-
+    
+     public boolean isFull() {
+        return size == capacity;
+    }
+    
     public boolean isEmpty() {
         return top == null;
     }
 
-    public boolean isFull() {
-        return size == capacity;
-    }
-
-    public int getSize() {
+    public int size() {
         return size;
     }
-
+    
     public int getCapacity() {
         return capacity;
     }
+    
+    public void setCapacity(int capacity) {
+        this.capacity = capacity;
+    }
+
+
+    public void clear() {
+        top = null;
+        size = 0;
+    }
 }
-
-
