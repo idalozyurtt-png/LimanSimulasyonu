@@ -58,7 +58,10 @@ public class MainFrame extends Application {
     private HBox   seferCards;
     StackPane      merkezPane;
     private Button oynatBtn;
-    private int simH = 9, simM = 0;
+    
+    // MANTIKLI ERİŞİM DÜZELTMESİ: Simülasyon motorunun doğrudan erişebilmesi için public yapıldı
+    public int simH = 9;
+    public int simM = 0;
     private Timeline saatTL;
 
     private int oncekiAlt = -1, oncekiUst = -1;
@@ -78,7 +81,6 @@ public class MainFrame extends Application {
 
         Scene scene = new Scene(root, 1500, 920);
 
-        // Hantal scrollbarları silen ince modern scrollbar kodumuz
         String customScrollbarCss = "data:text/css," +
                 ".scroll-pane { -fx-background-color: transparent; -fx-background: transparent; }" +
                 ".scroll-pane > .viewport { -fx-background-color: transparent; }" +
@@ -138,10 +140,10 @@ public class MainFrame extends Application {
         row.setPadding(new Insets(0, 35, 15, 35));
         row.setStyle("-fx-background-color: transparent;");
 
-        statFerLbl  = lbl("0/0", 32, true, TEXT);
-        statAracLbl = lbl("0",   32, true, TEXT);
-        statHashLbl = lbl("0",   32, true, TEXT);
-        statKuyLbl  = lbl("0",   32, true, TEXT);
+       statFerLbl  = lbl("0/0", 32, true, TEXT);
+        statAracLbl = lbl("0", 32, true, TEXT);
+        statHashLbl = lbl("0", 32, true, TEXT);
+        statKuyLbl  = lbl("0", 32, true, TEXT);
 
         VBox c1 = statCard(SHIP_SVG, "KALKAN FERİBOT", statFerLbl, SKY);
         VBox c2 = statCard(CAR_SVG, "YÜKLENEN ARAÇ", statAracLbl, EMERALD);
@@ -249,7 +251,6 @@ public class MainFrame extends Application {
         yol2Inner = new VBox(8); yol2Inner.setPadding(new Insets(5, 10, 5, 0));
         VBox y2Sec = queueSection("2. YÜKLEME YOLU", "FIFO Akışı", yol2Cnt, yol2Inner);
 
-        // Panellerin ezilmesini önleyen kritik yükseklik ayarları
         giseSec.setMinHeight(150); giseSec.setPrefHeight(300); giseSec.setMaxHeight(Double.MAX_VALUE);
         y1Sec.setMinHeight(150); y1Sec.setPrefHeight(300); y1Sec.setMaxHeight(Double.MAX_VALUE);
         y2Sec.setMinHeight(150); y2Sec.setPrefHeight(300); y2Sec.setMaxHeight(Double.MAX_VALUE);
@@ -336,7 +337,6 @@ public class MainFrame extends Application {
                 "-fx-border-radius: 180px 180px 25px 25px;");
         hull.setEffect(new DropShadow(BlurType.GAUSSIAN, Color.rgb(15,23,42,0.12), 25, 0, 4, 12));
 
-        // Kaptan Köşkü Turkuaz renk ve beyaz metinle düzeltildi
         HBox bridge = new HBox(); bridge.setAlignment(Pos.CENTER); bridge.setPadding(new Insets(6, 0, 6, 0));
         bridge.setStyle("-fx-background-color: linear-gradient(to right, #7dd3fc, #38bdf8); -fx-background-radius: 60px 60px 4px 4px;");
         bridge.getChildren().add(lbl("KAPTAN KÖŞKÜ / BRIDGE", 10, true, "#ffffff"));
@@ -505,7 +505,7 @@ public class MainFrame extends Application {
         }
     }
 
-    private void drainQueue(dataStructures.MyQueue<Arac> q, VBox box, Label badge) {
+    private void drainQueue(datastructures.MyQueue<Arac> q, VBox box, Label badge) {
         List<Arac> items = new ArrayList<>();
         while (!q.isEmpty()) items.add(q.dequeue());
         for (Arac a : items) q.enqueue(a);
@@ -574,16 +574,40 @@ public class MainFrame extends Application {
             if (olayInner.getChildren().size() > 50) olayInner.getChildren().remove(50);
         });
     }
-
-    private void startSaatTL() {
-        saatTL = new Timeline(new KeyFrame(Duration.seconds(1.0), e -> {
-            simM += 5; if (simM >= 60) { simM = 0; simH++; }
-            if (simH > 23) simH = 0;
-            saatLbl.setText(saatStr());
-        }));
-        saatTL.setCycleCount(Timeline.INDEFINITE); saatTL.play();
+    
+    // MANTIKLI SÜREÇ ENTEGRASYONU: Simülasyon motorunun araç gişe saatiyle karşılaştırabileceği double zamanı döner.
+    public double getSimulasyonSaati() {
+        return simH + (simM / 100.0);
     }
 
+    // GÜVENLİ SETTER METODU: Simülasyon motoru saati ileri sardığında ana ekran verilerini güvenle günceller.
+    public void simulasyonSaatiniSetEt(int h, int m) {
+        this.simH = h;
+        this.simM = m;
+        saatLbl.setText(saatStr());
+        yenile();
+    }
+
+ 
+    private void startSaatTL() {
+        // Gerçek dünyadaki her 1 saniyede bir tetiklenir (1.0 saniye)
+        saatTL = new Timeline(new KeyFrame(Duration.seconds(1.0), e -> {
+            if (motor.isCalisiyor()) {
+                // EĞER SİMÜLASYON OYNATILIYORSA (PLAY):
+                // Motor içerisinden adımlama fonksiyonunu çağırır.
+                motor.adimAt();
+                // KRİTİK DÜZELTME: Saat yazısını her saniye ekranda canlı canlı güncelliyoruz!
+                saatLbl.setText(saatStr());
+            } else {
+                // EĞER SİMÜLASYON DURAKLATILDIYSA VEYA BAŞLAMADIYSA (PAUSE):
+                // Zaman kendi kendine akmaz, "Adımla" butonuna basılmasını bekler.
+                saatLbl.setText(saatStr());
+            }
+        }));
+        saatTL.setCycleCount(Timeline.INDEFINITE);
+        saatTL.play();
+    }
+   
     String saatStr() { return String.format("%02d:%02d", simH, simM); }
     private static String fmt(double d) { return String.format("%.2f", d); }
 
