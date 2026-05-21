@@ -1,3 +1,4 @@
+
 package logic;
 
 import models.Arac;
@@ -25,6 +26,10 @@ public class XmlManager {
     static {
         new File(DATA_DIR).mkdirs();
     }
+
+    // =====================================================
+    // FERİBOTLARI OKU
+    // =====================================================
 
     public static List<Feribot> feribotlariOku() {
 
@@ -113,6 +118,10 @@ public class XmlManager {
         return feribotlar;
     }
 
+    // =====================================================
+    // ARAÇLARI OKU
+    // =====================================================
+
     public static List<Arac> araclariOku() {
 
         List<Arac> araclar = new ArrayList<>();
@@ -194,6 +203,11 @@ public class XmlManager {
 
         return araclar;
     }
+
+    // =====================================================
+    // YENİ ARAÇ EKLE
+    // =====================================================
+
     public static void aracEkle(
             Arac yeniArac,
             List<Arac> mevcutAraclar
@@ -203,11 +217,20 @@ public class XmlManager {
 
         tumAraclariKaydet(mevcutAraclar);
     }
+
+    // =====================================================
+    // TÜM ARAÇLARI YENİDEN YAZ
+    // =====================================================
+
     public static void tumAraclariKaydet(
             List<Arac> araclar
     ) {
 
         try {
+
+            // =================================================
+            // SAATE GÖRE SIRALA
+            // =================================================
 
             araclar.sort(
                     Comparator.comparingDouble(
@@ -215,13 +238,20 @@ public class XmlManager {
                     )
             );
 
+            // =================================================
+            // NUMARALARI YENİDEN VER
+            // =================================================
 
             int aracNo = 1;
 
             for (Arac arac : araclar) {
                 arac.setAracNo(aracNo++);
             }
-            
+
+            // =================================================
+            // XML OLUŞTUR
+            // =================================================
+
             DocumentBuilderFactory factory =
                     DocumentBuilderFactory.newInstance();
 
@@ -234,6 +264,9 @@ public class XmlManager {
 
             doc.appendChild(root);
 
+            // =================================================
+            // DUPLICATE ENGELLE
+            // =================================================
 
             HashSet<String> plakalar =
                     new HashSet<>();
@@ -297,6 +330,11 @@ public class XmlManager {
             e.printStackTrace();
         }
     }
+
+    // =====================================================
+    // DEFAULT FERİBOT XML
+    // =====================================================
+
     private static void createDefaultFeribotXml() {
 
         try {
@@ -372,6 +410,10 @@ public class XmlManager {
         }
     }
 
+    // =====================================================
+    // DEFAULT ARAÇ XML
+    // =====================================================
+
     private static void createDefaultAracXml() {
 
         try {
@@ -418,6 +460,10 @@ public class XmlManager {
         }
     }
 
+    // =====================================================
+    // TAG OKU
+    // =====================================================
+
     private static String getTagValue(
             String tag,
             Element element
@@ -440,6 +486,11 @@ public class XmlManager {
 
         return "";
     }
+
+    // =====================================================
+    // XML ELEMENT EKLE
+    // =====================================================
+
     private static void addElement(
             Document doc,
             Element parent,
@@ -456,6 +507,9 @@ public class XmlManager {
         parent.appendChild(elem);
     }
 
+    // =====================================================
+    // XML KAYDET
+    // =====================================================
 
     private static void saveDocument(
             Document doc,
