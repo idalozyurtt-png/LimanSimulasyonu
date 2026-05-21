@@ -6,50 +6,43 @@ import javafx.util.Duration;
 import logic.LimanYonetici;
 import models.Arac;
 import models.Feribot;
-
 import java.util.List;
 
 /**
  * Adım adım + otomatik simülasyon motoru.
- * Yalnızca LimanYonetici'nin public API'sini kullanır.
+ * Kusursuz Sürüm: Sadece her iki kat birden %100 dolduğunda saat beklenmez.
+ * Diğer tüm doluluk koşullarında planlanan kalkış saati harfiyen beklenir.
  */
 public class SimulasyonMotoru {
 
     private final MainFrame frame;
     private LimanYonetici yonetici;
 
-    private int     aktifIdx        = 0;
-    private int     yuklenenSayi    = 0;
-    private boolean calisiyor       = false;
-    private double  hizCarpan       = 1.0;
+    private int aktifIdx = 0;
+    private int yuklenenSayi = 0;
+    private boolean calisiyor = false;
+    private double hizCarpan = 1.0;
     private Timeline autoTimeline;
 
-    // Araçlar yol1 ve yol2'den sırayla alınır
-    private boolean siradakiYol1 = true;
+    private boolean siradakiYol1 = true; // Araçlar yol1 ve yol2'den sırayla alınır
 
     public SimulasyonMotoru(MainFrame frame, LimanYonetici yonetici) {
-        this.frame    = frame;
+        this.frame = frame;
         this.yonetici = yonetici;
     }
 
     public void reset(LimanYonetici yeni) {
         durdur();
-        this.yonetici  = yeni;
-        aktifIdx       = 0;
-        yuklenenSayi   = 0;
-        calisiyor      = false;
-        siradakiYol1   = true;
+        this.yonetici = yeni;
+        aktifIdx = 0;
+        yuklenenSayi = 0;
+        calisiyor = false;
+        siradakiYol1 = true;
     }
 
-    // ── Otomatik oynatma ─────────────────────────────
     public void oynat() {
         if (calisiyor) return;
         calisiyor = true;
-        autoTimeline = new Timeline(new KeyFrame(
-                Duration.millis(1800 / hizCarpan), e -> adimAt()
-        ));
-        autoTimeline.setCycleCount(Timeline.INDEFINITE);
-        autoTimeline.play();
     }
 
     public void durdur() {
@@ -64,7 +57,7 @@ public class SimulasyonMotoru {
         if (calisiyor) { durdur(); oynat(); }
     }
 
-    // ── Tek adım ─────────────────────────────────────
+    // ── Simülasyon Mantığı Örgüsü ──────────────────
     public void adimAt() {
         List<Feribot> feribotlar = yonetici.getFeribotlar();
         if (feribotlar == null || feribotlar.isEmpty()) {
@@ -73,44 +66,67 @@ public class SimulasyonMotoru {
         }
         if (aktifIdx >= feribotlar.size()) {
             frame.olay("--:--", "✅ Tüm seferler tamamlandı", MainFrame.EMERALD);
+            yonetici.tumAraclariListele(); // PDF Madde 8 dökümü
             durdur(); return;
         }
 
         Feribot aktif = feribotlar.get(aktifIdx);
+        double aktifSimulasyonSaati = frame.getSimulasyonSaati();
 
-        // Kalkış şartları sağlandıysa kalkış yap
-        if (aktif.kalkisSartlariSaglandiMi(aktif.getRihtimGirisSaati())) {
-            frame.olay(frame.saatStr(),
-                    "⚓ Feribot " + aktif.getFeribotNo() + " (" + aktif.getSeferNo() + ") kalkış yaptı",
-                    MainFrame.GOLD);
-            aktifIdx++;
-            siradakiYol1 = true;
-            frame.yenile();
+        // 1. KONTROL: Feribot henüz rıhtıma yanaşmadıysa zamanı ilerlet ve bekle
+        if (aktifSimulasyonSaati < aktif.getRihtimGirisSaati()) {
+            zamanliDakikaArtir();
             return;
         }
 
-        // Araç yükle — önce belirlenen yoldan, sonra diğerinden
+        // 2. KONTROL: Eğer kalkış koşulları (Zaman bağımlı veya bağımsız) sağlandıysa feribotu kaldır
+        if (aktif.kalkisSartlariSaglandiMi(aktifSimulasyonSaati)) {
+            feribotuKalkisYaptir(aktif, "Kalkış koşulları doğrulandı");
+            return;
+        }
+
         boolean yuklendi = false;
+        
+        // Sırayla birer birer (alternating) araç yükleme döngüsü
         for (int deneme = 0; deneme < 2 && !yuklendi; deneme++) {
-            var kuyruk = siradakiYol1
-                    ? yonetici.getYuklemeYolu1()
-                    : yonetici.getYuklemeYolu2();
+            var kuyruk = siradakiYol1 ? yonetici.getYuklemeYolu1() : yonetici.getYuklemeYolu2();
             int yolNo = siradakiYol1 ? 1 : 2;
 
             if (!kuyruk.isEmpty()) {
-                Arac a = kuyruk.dequeue();
+                Arac a = kuyruk.peek(); // Elemanı silmeden önce gişe saati kontrolü
+                
+                // Araç gişe giriş saati henüz simülasyon saatine gelmediyse yüklenemez
+                if (a.getGiseGirisSaati() > aktifSimulasyonSaati) {
+                    siradakiYol1 = !siradakiYol1;
+                    continue; 
+                }
+
+                kuyruk.dequeue();
+
                 if (aktif.aracYukle(a)) {
                     yuklenenSayi++;
+                    
+                    // PDF Madde 25 gereği son binen araca göre kalkış saatini güncelle
+                    aktif.setGercekKalkisSaati(a.getGiseGirisSaati());
+
                     boolean agir = a.getAracTipi() == 1;
                     frame.olay(frame.saatStr(),
                             a.getPlaka() + " → Feribot " + aktif.getFeribotNo()
-                                    + " · " + (agir ? "Alt Kat" : "Üst Kat")
-                                    + "  [Yol " + yolNo + "]",
+                                    + " · " + (agir ? "Alt Kat" : "Üst Kat") + " [Yol " + yolNo + "]",
                             agir ? MainFrame.TRK_C : MainFrame.SKY);
+                    
                     yuklendi = true;
-                    siradakiYol1 = !siradakiYol1; // sıradaki yolu değiştir
+                    siradakiYol1 = !siradakiYol1;
+
+                    // 🔥 ANLIK KONTROL: Araç bindiği saniyede her iki kat birden %100 tam doldu mu?
+                    // Sadece iki kat birden tam dolduysa saati beklemeden anında kalkar!
+                    if (aktif.kalkisSartlariSaglandiMi(frame.getSimulasyonSaati())) {
+                        feribotuKalkisYaptir(aktif, "Çift Kat %100 Doluluk (Erken Kalkış)");
+                        return; 
+                    }
+
                 } else {
-                    kuyruk.enqueue(a); // sığmadı, geri koy
+                    kuyruk.enqueue(a); // Sığmadı, sıraya geri bırak
                     siradakiYol1 = !siradakiYol1;
                 }
             } else {
@@ -118,21 +134,45 @@ public class SimulasyonMotoru {
             }
         }
 
-        if (!yuklendi) {
-            // Her iki kuyruk da boşsa veya araç sığmıyorsa kalkış yap
-            frame.olay(frame.saatStr(),
-                    "⚓ Feribot " + aktif.getFeribotNo() + " kalkış yaptı (kuyruk boş)",
-                    MainFrame.GOLD);
-            aktifIdx++;
-            siradakiYol1 = true;
+        // 3. KONTROL: Saat dolduysa, yükleme bittiyse ve koşullar okeyse uğurla
+        if (!yuklendi && aktifSimulasyonSaati >= aktif.getRihtimKalkisSaati()) {
+            if (aktif.kalkisSartlariSaglandiMi(aktifSimulasyonSaati)) {
+                feribotuKalkisYaptir(aktif, "Planlanan kalkış saati tamamlandı");
+                return;
+            }
+        }
+
+        // Eğer feribot kalkmadıysa zamanı tam 5 dakika ileri alarak akışa devam et
+        zamanliDakikaArtir();
+    }
+
+    private void feribotuKalkisYaptir(Feribot aktif, String neden) {
+        aktif.feribotBilgileriniYazdir(); // Konsola rapor basar
+        frame.olay(frame.saatStr(),
+                "⚓ Feribot " + aktif.getFeribotNo() + " (" + aktif.getSeferNo() + ") rıhtımdan ayrıldı. (" + neden + ")",
+                MainFrame.GOLD);
+        aktifIdx++;
+        siradakiYol1 = true;
+        frame.yenile();
+    }
+
+    private void zamanliDakikaArtir() {
+        // İster Oynat modunda olsun ister Adımla modunda, her tetiklemede ekrandaki saati tam 5 dakika ilerletir.
+        frame.simM += 5;
+
+        if (frame.simM >= 60) {
+            frame.simM = frame.simM % 60;
+            frame.simH++;
+        }
+        if (frame.simH > 23) {
+            frame.simH = 0;
         }
 
         frame.yenile();
     }
 
-    // ── Getters ───────────────────────────────────────
-    public int     getAktifIdx()         { return aktifIdx; }
-    public int     getYuklenenSayi()     { return yuklenenSayi; }
+    public int getAktifIdx() { return aktifIdx; }
+    public int getYuklenenSayi() { return yuklenenSayi; }
 
     public Feribot getAktifFeribot() {
         List<Feribot> f = yonetici.getFeribotlar();
