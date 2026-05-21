@@ -1,7 +1,7 @@
 
 package logic;
 
-import dataStructures.*;
+import datastructures.*;
 import models.*;
 import java.util.*;
 
