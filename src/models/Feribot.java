@@ -4,7 +4,7 @@
  */
 package models;
 
-import dataStructures.MyStack;
+import datastructures.MyStack;
 
 /**
  *
@@ -23,7 +23,7 @@ public class Feribot {
     private static final int KAPASITE = 5;
 
     public Feribot() {
-        this.seferNo = "";
+        this.seferNo = " ";
         this.feribotNo = 0;
         this.feribotRihtimGirisSaati = 0.0;
         this.feribotRihtimKalkisSaati = 0.0;
@@ -105,21 +105,30 @@ public class Feribot {
 
    
     public boolean kalkisSartlariSaglandiMi(double simdikiZaman) {
-        int altDoluluk = (altKat.size() * 100) / KAPASITE;
-        int ustDoluluk = (ustKat.size() * 100) / KAPASITE;
-        
- 
-        if (altKat.size() == KAPASITE && ustKat.size() == KAPASITE) {
-            return true;
-        }
-        if (altKat.size() == KAPASITE || ustKat.size() == KAPASITE) {
-            return true;
-        }
-        if (simdikiZaman >= feribotRihtimKalkisSaati && altDoluluk >= 50 && ustDoluluk >= 50) {
-            return true;
-        }
+
+    int altDoluluk = altKat.size();
+    int ustDoluluk = ustKat.size();
+
+    if (altDoluluk == KAPASITE &&
+        ustDoluluk == KAPASITE) {
+
+        return true;
+    }
+
+    if (simdikiZaman < feribotRihtimKalkisSaati) {
         return false;
     }
+
+    boolean ikiKatYariDolu =
+            altDoluluk >= 3 &&
+            ustDoluluk >= 3;
+
+    boolean tekKatTamDolu =
+            altDoluluk == KAPASITE ||
+            ustDoluluk == KAPASITE;
+
+    return ikiKatYariDolu || tekKatTamDolu;
+}
 
     
     public void feribotBilgileriniYazdir() {
