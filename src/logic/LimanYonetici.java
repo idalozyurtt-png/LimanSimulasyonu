@@ -1,7 +1,7 @@
 
 package logic;
 
-import dataStructures.*;
+import datastructures.*;
 import models.*;
 import java.util.*;
 
@@ -250,18 +250,23 @@ public class LimanYonetici {
     // =====================================================
 
     public void tumAraclariListele() {
+// Sadece ilgili metodun (Tüm araçları listeleme fonksiyonu) PDF isterlerine göre güncellenmiş hali 
 
-        System.out.println(
-                "\n========== TÜM ARAÇLAR =========="
-        );
+    System.out.println("\nSefer No    Araç No    Plaka      Araç Tipi"); // [cite: 81, 82, 83]
+    System.out.println("-------------------------------------------");
+    
+    List<Arac> sirali = new ArrayList<>(tumAraclar);
+    sirali.sort(Comparator.comparingInt(Arac::getAracNo)); // 
 
-        List<Arac> sirali = new ArrayList<>(tumAraclar);
+    for (Arac arac : sirali) {
+        String sNo = arac.getSeferNo().isEmpty() ? "Beklemede" : arac.getSeferNo();
+        System.out.printf("%-11s %-100d %-10s %-9d%n", 
+                sNo, 
+                arac.getAracNo(), 
+                arac.getPlaka(), 
+                arac.getAracTipi()); // [cite: 84, 85, 86, 87]
+    }
 
-        sirali.sort(Comparator.comparingInt(Arac::getAracNo));
-
-        for (Arac arac : sirali) {
-            System.out.println(arac);
-        }
     }
 
     // =====================================================
